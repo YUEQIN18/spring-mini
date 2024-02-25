@@ -1,8 +1,11 @@
 package io.qy.spring.config;
 
+import io.qy.spring.annotation.Component;
+import io.qy.spring.annotation.ComponentScan;
+import io.qy.spring.annotation.Scope;
 import io.qy.spring.bean.DisposableBean;
 import io.qy.spring.bean.DisposableBeanAdapter;
-import io.qy.spring.bean.MyBeanDefinition;
+import io.qy.spring.bean.BeanDefinition;
 import io.qy.spring.bean.ObjectFactory;
 
 import java.beans.Introspector;
@@ -25,7 +28,7 @@ public class MyApplicationContext {
     /**
      * beanName -> BeanDefinition
      */
-    private final Map<String, MyBeanDefinition> beanDefinitionMap = new ConcurrentHashMap<>();
+    private final Map<String, BeanDefinition> beanDefinitionMap = new ConcurrentHashMap<>();
 
     /**
      * Cache of singleton factories: bean name to ObjectFactory.
@@ -75,17 +78,16 @@ public class MyApplicationContext {
     private void scanBeanDefinition(Class<?> configClass) {
         if (configClass.isAnnotationPresent(ComponentScan.class)) {
             ComponentScan componentScanAnnotation = (ComponentScan) configClass.getAnnotation(ComponentScan.class);
-            // 扫描路径 com.mafei.test
+
             String path = componentScanAnnotation.value();
-            // 扫描路径 com/mafei/test
             path = path.replace(".", "/");
 
             ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-            // 取得绝对路径: /Users/mafei007/AppProjects/IdeaProjects/spring_study/out/production/simple_impl/com/mafei/test
+
             URL resource = classLoader.getResource(path);
             File file = new File(resource.getFile());
 
-            // 遍历目录下的所有文件，都是 componentScan 需要扫描的，这里只遍历了一层目录
+            // 遍历目录下的所有文件，这里只遍历了一层目录
             if (file.isDirectory()) {
                 for (File f : file.listFiles()) {
                     String fileName = f.getAbsolutePath();
@@ -93,9 +95,7 @@ public class MyApplicationContext {
 
                     if (fileName.endsWith(".class")) {
                         // 提取出 class 对象，需要类的全限定名
-                        // com/mafei/test/Usertest
                         String className = fileName.substring(fileName.indexOf("com"), fileName.indexOf(".class"));
-                        // com.mafei.test.Usertest
                         className = className.replace(File.separator, ".");
                         System.out.println(className);
                         try {
@@ -160,7 +160,7 @@ public class MyApplicationContext {
      * 注册常用的 Bean 后处理器到 beanDefinitionMap 中
      */
     private void registerCommonBeanPostProcessor() {
-        MyBeanDefinition beanDefinition = new MyBeanDefinition();
+        BeanDefinition beanDefinition = new BeanDefinition();
         beanDefinition.setType(AnnotationAwareAspectJAutoProxyCreator.class);
         beanDefinition.setScope("singleton");
         beanDefinitionMap.put("internalAutoProxyCreator", beanDefinition);
@@ -180,7 +180,7 @@ public class MyApplicationContext {
      * createBean 方法就是在模拟 bean 的声明周期
      * 创建、依赖注入、初始化
      */
-    private Object createBean(String beanName, MyBeanDefinition beanDefinition) {
+    private Object createBean(String beanName, BeanDefinition beanDefinition) {
         beforeCreation(beanName, beanDefinition);
         try {
             // 创建对象
@@ -228,13 +228,13 @@ public class MyApplicationContext {
         }
     }
 
-    private void registerDisposableBeanIfNecessary(String beanName, Object bean, MyBeanDefinition beanDefinition) {
+    private void registerDisposableBeanIfNecessary(String beanName, Object bean, BeanDefinition beanDefinition) {
         if (beanDefinition.isSingleton() && DisposableBeanAdapter.hasDestroyMethod(bean, beanDefinition)) {
             this.disposableBeans.put(beanName, new DisposableBeanAdapter(bean, beanName, beanDefinition));
         }
     }
 
-    private void afterCreation(String beanName, MyBeanDefinition beanDefinition) {
+    private void afterCreation(String beanName, BeanDefinition beanDefinition) {
         if (beanDefinition.isSingleton()) {
             afterSingletonCreation(beanName);
         } else {
@@ -264,7 +264,7 @@ public class MyApplicationContext {
         this.singletonsCurrentlyInCreation.remove(beanName);
     }
 
-    private void beforeCreation(String beanName, MyBeanDefinition beanDefinition) {
+    private void beforeCreation(String beanName, BeanDefinition beanDefinition) {
         if (beanDefinition.isSingleton()) {
             beforeSingletonCreation(beanName);
         } else {
@@ -346,7 +346,7 @@ public class MyApplicationContext {
      * @param beanDefinition
      * @param bean
      */
-    private void populateBean(String beanName, MyBeanDefinition beanDefinition, Object bean) throws IllegalAccessException, InvocationTargetException {
+    private void populateBean(String beanName, BeanDefinition beanDefinition, Object bean) throws IllegalAccessException, InvocationTargetException {
         Class clazz = beanDefinition.getType();
         // 解析方法上的 Autowired
         for (Method method : clazz.getMethods()) {
@@ -375,7 +375,7 @@ public class MyApplicationContext {
      */
 
     public Object getBean(String beanName) {
-        MyBeanDefinition beanDefinition = beanDefinitionMap.get(beanName);
+        BeanDefinition beanDefinition = beanDefinitionMap.get(beanName);
         if (beanDefinition == null) {
             throw new NullPointerException();
         } else {
@@ -430,7 +430,7 @@ public class MyApplicationContext {
     public List<Class<?>> getAllBeanClass() {
         return beanDefinitionMap.values()
                 .stream()
-                .map((Function<MyBeanDefinition, Class<?>>) MyBeanDefinition::getType)
+                .map((Function<BeanDefinition, Class<?>>) BeanDefinition::getType)
                 .collect(Collectors.toList());
     }
 
@@ -455,7 +455,7 @@ public class MyApplicationContext {
      * @return
      * @throws Throwable
      */
-    private Object createBeanInstance(String beanName, MyBeanDefinition beanDefinition) throws Throwable {
+    private Object createBeanInstance(String beanName, BeanDefinition beanDefinition) throws Throwable {
         Class<?> clazz = beanDefinition.getType();
         // 优先使用无参构造
         Constructor<?>[] constructors = clazz.getConstructors();

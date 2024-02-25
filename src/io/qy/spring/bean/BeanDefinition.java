@@ -5,7 +5,7 @@ package io.qy.spring.bean;
  * @create 2024-02-20 17:54:00
  * Bean 的基本信息
  */
-public class MyBeanDefinition {
+public class BeanDefinition {
 
     private Class<?> type;
     private String scope;
