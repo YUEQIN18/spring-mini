@@ -57,7 +57,7 @@ public class MyApplicationContext {
      */
     private final ThreadLocal<Object> prototypesCurrentlyInCreation = new ThreadLocal<>();
 
-//    private final List<BeanPostProcessor> beanPostProcessorList = new ArrayList<>();
+    private final List<BeanPostProcessor> beanPostProcessorList = new ArrayList<>();
 
     public MyApplicationContext(Class<?> configClass) {
         this.configClass = configClass;
@@ -185,12 +185,12 @@ public class MyApplicationContext {
 
             // 如果当前创建的是单例对象，依赖注入前将工厂对象 fa 存入三级缓存 singletonFactories 中
             if (beanDefinition.isSingleton()) {
-                System.out.println("🐶🐶🐶🐶 createBean：Eagerly caching bean '" + beanName + "' to allow for resolving potential circular references");
+                System.out.println("createBean：Eagerly caching bean '" + beanName + "' to allow for resolving potential circular references");
                 this.singletonFactories.put(beanName, new ObjectFactory<Object>() {
                     @Override
                     public Object getObject() throws RuntimeException {
                         Object exposedObject = bean;
-                        for (BeanPostProcessor beanPostProcessor : MaFeiApplicationContext.this.beanPostProcessorList) {
+                        for (BeanPostProcessor beanPostProcessor : MyApplicationContext.this.beanPostProcessorList) {
                             if (beanPostProcessor instanceof SmartInstantiationAwareBeanPostProcessor) {
                                 exposedObject = ((SmartInstantiationAwareBeanPostProcessor) beanPostProcessor).getEarlyBeanReference(exposedObject, beanName);
                             }
