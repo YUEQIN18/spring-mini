@@ -1,5 +1,6 @@
 package io.qy.spring.config;
 
+import io.qy.spring.annotation.Autowired;
 import io.qy.spring.annotation.Component;
 import io.qy.spring.annotation.ComponentScan;
 import io.qy.spring.annotation.Scope;
