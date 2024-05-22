@@ -1,9 +1,11 @@
 package io.qy.spring.config;
 
-import io.qy.spring.annotation.Autowired;
-import io.qy.spring.annotation.Component;
-import io.qy.spring.annotation.ComponentScan;
-import io.qy.spring.annotation.Scope;
+import io.qy.spring.annotation.*;
+import io.qy.spring.aop.factory.AnnotationAwareAspectJAutoProxyCreator;
+import io.qy.spring.aop.proxy.LazyInjectTargetSource;
+import io.qy.spring.aop.proxy.ProxyFactory;
+import io.qy.spring.aware.ApplicationContextAware;
+import io.qy.spring.aware.BeanNameAware;
 import io.qy.spring.bean.*;
 
 import java.beans.Introspector;
@@ -302,11 +304,7 @@ public class MyApplicationContext {
 
     /**
      * 初始化阶段，包含：Aware回调、初始化前、初始化、初始化后
-     *
-     * @param beanName
-     * @param beanDefinition
-     * @param bean
-     * @return
+
      */
     private Object initializeBean(String beanName, BeanDefinition beanDefinition, Object bean) {
         // 0️⃣ 各种 Aware 回调
@@ -339,10 +337,6 @@ public class MyApplicationContext {
 
     /**
      * 依赖注入阶段，执行 bean 后处理器的 postProcessProperties 方法
-     *
-     * @param beanName
-     * @param beanDefinition
-     * @param bean
      */
     private void populateBean(String beanName, BeanDefinition beanDefinition, Object bean) throws IllegalAccessException, InvocationTargetException {
         Class clazz = beanDefinition.getType();
@@ -481,27 +475,27 @@ public class MyApplicationContext {
         return constructor.newInstance(args);
     }
 
-//    private Object buildLazyObjectFactory(String requestingBeanName) {
-//        return new ObjectFactory<Object>() {
-//            @Override
-//            public Object getObject() throws RuntimeException {
-//                return getBean(requestingBeanName);
-//            }
-//        };
-//    }
+    private Object buildLazyObjectFactory(String requestingBeanName) {
+        return new ObjectFactory<Object>() {
+            @Override
+            public Object getObject() throws RuntimeException {
+                return getBean(requestingBeanName);
+            }
+        };
+    }
 
-//    private Object buildLazyResolutionProxy(String requestingBeanName, Class<?> clazz) {
-//        LazyInjectTargetSource targetSource = new LazyInjectTargetSource(this, requestingBeanName);
-//        ProxyFactory proxyFactory = new ProxyFactory();
-//        proxyFactory.setTargetSource(targetSource);
-//        proxyFactory.setInterfaces(clazz.getInterfaces());
-//        // 临时的解决方案，JDK 动态代理只能基于接口，要代理的 class 可能本身是个接口，添加进去
-//        if (clazz.isInterface()) {
-//            proxyFactory.addInterface(clazz);
-//        }
-//        System.out.println("🐷🐷🐷🐷 使用有参构造，为 " + requestingBeanName + " 参数创建代理对象");
-//        return proxyFactory.getProxy();
-//    }
+    private Object buildLazyResolutionProxy(String requestingBeanName, Class<?> clazz) {
+        LazyInjectTargetSource targetSource = new LazyInjectTargetSource(this, requestingBeanName);
+        ProxyFactory proxyFactory = new ProxyFactory();
+        proxyFactory.setTargetSource(targetSource);
+        proxyFactory.setInterfaces(clazz.getInterfaces());
+        // 临时的解决方案，JDK 动态代理只能基于接口，要代理的 class 可能本身是个接口，添加进去
+        if (clazz.isInterface()) {
+            proxyFactory.addInterface(clazz);
+        }
+        System.out.println("🐷🐷🐷🐷 使用有参构造，为 " + requestingBeanName + " 参数创建代理对象");
+        return proxyFactory.getProxy();
+    }
 
     public void close() {
         destroySingletons();
